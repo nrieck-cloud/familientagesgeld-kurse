@@ -1,0 +1,72 @@
+name: Marktdaten
+
+on:
+  schedule:
+    - cron: "7 * * * *"     # stündlich: Kurse
+    - cron: "40 5 * * *"    # täglich 05:40 UTC: Historie, Bilanzen, Makro, Investoren
+  workflow_dispatch:
+    inputs:
+      umfang:
+        description: "stuendlich oder taeglich"
+        default: "taeglich"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: marktdaten
+  cancel-in-progress: false
+
+jobs:
+  abruf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Bisherige Daten holen
+        run: |
+          mkdir -p out
+          if git ls-remote --exit-code origin daten >/dev/null 2>&1; then
+            git fetch --depth 1 origin daten
+            git --work-tree=out checkout FETCH_HEAD -- . || true
+            git reset -q
+          fi
+          ls -la out
+
+      - name: pdftotext für Kongress-Meldungen
+        if: github.event.schedule == '40 5 * * *' || github.event_name == 'workflow_dispatch'
+        run: sudo apt-get install -y -qq poppler-utils >/dev/null
+
+      - name: Daten abrufen
+        env:
+          SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
+        run: |
+          if [ "${{ github.event.schedule }}" = "7 * * * *" ]; then UMFANG=stuendlich;
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then UMFANG="${{ github.event.inputs.umfang }}";
+          else UMFANG=taeglich; fi
+          python3 abruf.py "$UMFANG" out
+
+      - name: Im Zweig "daten" veröffentlichen (ohne Verlauf)
+        run: |
+          cd out
+          rm -rf .git *.tmp
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > stand.txt
+          git init -q -b daten
+          git config user.name "Marktdaten-Bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Marktdaten $(cat stand.txt)"
+          git push -q --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" daten
+
+      - name: Lebenszeichen (GitHub pausiert Zeitpläne nach 60 Tagen ohne Commit)
+        if: github.event.schedule == '40 5 * * *'
+        run: |
+          if [ "$(date -u +%d)" = "01" ]; then
+            date -u +"%Y-%m-%d" > lebenszeichen.txt
+            git config user.name "Marktdaten-Bot"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add lebenszeichen.txt && git commit -q -m "Lebenszeichen $(date -u +%Y-%m)" && git push -q
+          fi
