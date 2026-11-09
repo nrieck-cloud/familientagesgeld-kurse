@@ -520,6 +520,7 @@ def kongress():
     fil.sort(key=lambda f: f["datum"], reverse=True)
     fil = fil[:40]
     hat_pdf = subprocess.run(["which", "pdftotext"], capture_output=True).returncode == 0
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     zeilen = []
     for f in fil:
         f["url"] = "https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/%d/%s.pdf" % (jahr, f["doc"])
@@ -530,11 +531,14 @@ def kongress():
             with tempfile.NamedTemporaryFile(suffix=".pdf") as tmp:
                 tmp.write(pdf); tmp.flush()
                 txt = subprocess.run(["pdftotext", "-layout", tmp.name, "-"], capture_output=True, text=True, timeout=60).stdout
-            for line in txt.splitlines():
-                m = re.search(r"\(([A-Z][A-Z.\-]{0,6})\).*?\b(P|S|S \(partial\)|E)\b\s+(\d{2}/\d{2}/\d{4})\s+\d{2}/\d{2}/\d{4}\s+(\$[\d,]+\s*-\s*\$[\d,]+|Over \$[\d,]+)", line)
-                if m:
-                    zeilen.append({"wer": f["name"], "staat": f["staat"], "symbol": m.group(1), "art": "Kauf" if m.group(2) == "P" else "Verkauf" if m.group(2).startswith("S") else "Tausch",
-                                   "datum": iso(m.group(3)), "betrag": re.sub(r"\s+", " ", m.group(4)), "gemeldet": f["datum"], "url": f["url"]})
+            import ptr  # Parser aus day-trader-skill (MIT, Jake Schincariol)
+            for r in ptr.parse_ptr_text(txt, f["datum"]).get("rows", []):
+                if not r.get("ticker"):
+                    continue
+                art = "Kauf" if r["type"] == "P" else "Verkauf" if r["type"].startswith("S") else "Tausch"
+                zeilen.append({"wer": f["name"], "staat": f["staat"], "symbol": r["ticker"], "art": art, "datum": r.get("date") or "",
+                               "betrag": r.get("amount") or "", "gemeldet": f["datum"], "url": f["url"], "inhaber": r.get("owner_name") or "",
+                               "option": bool(r.get("option"))})
         except Exception as e:
             log("PTR %s: %s" % (f["doc"], e))
         time.sleep(0.3)
