@@ -31,7 +31,7 @@ DAX = ["SAP.DE","SIE.DE","ALV.DE","DTE.DE","AIR.DE","RHM.DE","MUV2.DE","SHL.DE",
        "HEN3.DE","CON.DE","QIA.DE","PAH3.DE","P911.DE","SRT3.DE","ZAL.DE","G1A.DE","BNR.DE","FME.DE"]
 ETF = ["SPY","QQQ","VOO","VTI","IWM","DIA","VEA","VWO","EEM","GLD","TLT","SCHD","EUNL.DE","VWCE.DE","SXR8.DE","IS3N.DE","EXS1.DE","XDWT.DE",
        "IUSN.DE","EXSA.DE","EQQQ.DE","XDWD.DE","SPPW.DE","4GLD.DE"]
-IDX = ["^GSPC","^NDX","^GDAXI","^VIX","^TNX","DX-Y.NYB","GC=F","CL=F","BTC-USD"]
+IDX = ["^GSPC","^NDX","^DJI","^GDAXI","^VIX","^TNX","DX-Y.NYB","GC=F","CL=F","BZ=F","BTC-USD"]
 SEKTOR_ETF = {"XLK": "Technologie", "XLF": "Finanzen", "XLV": "Gesundheit", "XLY": "Zykl. Konsum", "XLP": "Basiskonsum", "XLE": "Energie",
               "XLI": "Industrie", "XLB": "Grundstoffe", "XLU": "Versorger", "XLRE": "Immobilien", "XLC": "Kommunikation"}
 FRED = {"DGS10": "US-Staatsanleihe 10 J. (%)", "DGS2": "US-Staatsanleihe 2 J. (%)", "DGS3MO": "US-Geldmarkt 3 M. (%)", "T10Y2Y": "Zinskurve 10 J. − 2 J. (Pp.)",
